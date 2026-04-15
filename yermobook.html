@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>各看各書．讀書會 報名系統</title>
+    <!-- Tailwind CSS 樣式庫 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google 字體 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- 圖示庫 -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f8f5f2;
+        }
+        .checkbox-custom:checked + label {
+            background-color: #44403c;
+            color: white;
+            border-color: #44403c;
+        }
+        [lucide], .lucide {
+            width: 20px;
+            height: 20px;
+        }
+        .icon-large {
+            width: 36px;
+            height: 36px;
+        }
+    </style>
+</head>
+<body class="min-h-screen py-10 px-4 flex justify-center items-start">
+
+    <div id="app" class="max-w-md w-full">
+        <!-- 前台：報名表單介面 -->
+        <div id="form-view">
+            <div class="text-center mb-8">
+                <!-- 隱藏後台入口：點擊此圖示 5 下 -->
+                <div id="admin-trigger" class="inline-block p-4 rounded-full bg-stone-200 mb-5 cursor-pointer hover:bg-stone-300 transition-all active:scale-90 shadow-sm">
+                    <i data-lucide="book-open" class="icon-large text-stone-700"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-stone-800 tracking-wider mb-3">各看各書．讀書會</h1>
+                <div class="space-y-2">
+                    <p class="text-stone-600 font-light text-lg">
+                        在這裡，我們共享安靜，但不共享壓力。<br>
+                        帶上一本想讀的書，找個位子坐下吧。
+                    </p>
+                    <p class="inline-block px-3 py-1 bg-stone-800 text-white text-xs rounded-full font-medium">
+                        [ 本活動 6 個人即成團 ]
+                    </p>
+                </div>
+            </div>
+
+            <!-- 店家資訊 -->
+            <div class="bg-stone-100 rounded-2xl p-5 mb-6 border border-stone-200 flex items-start gap-4 shadow-sm">
+                <div class="bg-white p-2 rounded-lg shadow-inner">
+                    <i data-lucide="map-pin" class="text-stone-600"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="font-bold text-stone-800">野陌 yermo</h3>
+                    <p class="text-sm text-stone-600 mb-2">桃園區新埔三街46號</p>
+                    <a href="https://maps.app.goo.gl/xyAVcxv2tVvtg1NR7" target="_blank" class="inline-flex items-center text-xs text-stone-500 hover:text-stone-800 underline decoration-stone-300 transition-colors">
+                        查看 Google 地圖 <i data-lucide="external-link" class="ml-1 w-3 h-3"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 報名表單卡片 -->
+            <div id="main-card" class="bg-white rounded-3xl p-8 shadow-xl border border-stone-100">
+                <form id="registration-form">
+                    <div class="mb-6">
+                        <label class="flex items-center gap-2 text-sm font-semibold text-stone-700 mb-2">
+                            <i data-lucide="user"></i> LINE社群名稱
+                        </label>
+                        <input type="text" id="nickname" required placeholder="在i人夜店中的名字" 
+                            class="w-full px-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-stone-400 outline-none transition-all">
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="flex items-center gap-2 text-sm font-semibold text-stone-700 mb-2">
+                            <i data-lucide="message-circle"></i> 聯繫方式
+                        </label>
+                        <input type="text" id="contact" required placeholder="Line / IG / Threads ID" 
+                            class="w-full px-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-stone-400 outline-none transition-all">
+                        <p class="mt-2 text-[10px] text-stone-400 italic">請確保 ID 開啟搜尋功能，讓我們找得到妳。</p>
+                    </div>
+
+                    <div class="mb-8">
+                        <label class="flex items-center gap-2 text-sm font-semibold text-stone-700 mb-4">
+                            <i data-lucide="clock"></i> 可以參加的時間 (可複選)
+                        </label>
+                        <div class="grid grid-cols-1 gap-2" id="time-slots-container">
+                            <!-- 由 JS 自動產生時段 -->
+                        </div>
+                    </div>
+
+                    <button type="submit" id="submit-btn" 
+                        class="w-full bg-stone-800 text-white font-bold py-4 rounded-xl hover:bg-stone-700 transform active:scale-95 transition-all shadow-lg">
+                        提交報名
+                    </button>
+                </form>
+            </div>
+
+            <!-- 成功訊息 -->
+            <div id="success-msg" class="hidden bg-white rounded-3xl p-10 shadow-xl border border-stone-100 text-center">
+                <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i data-lucide="check-circle" class="w-10 h-10"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-stone-800 mb-2">報名已送出</h2>
+                <p class="text-stone-500 mb-8 leading-relaxed">感謝報名！成團會在社群內標記通知；<br>期待與你在「野陌 yermo」享受安靜的閱讀時光。</p>
+                <button type="button" onclick="window.resetForm()" class="text-stone-600 font-medium hover:text-stone-800 hover:underline">再填一份報名表</button>
+            </div>
+        </div>
+
+        <!-- 後台：管理介面 -->
+        <div id="admin-view" class="hidden max-w-4xl mx-auto w-full fixed inset-0 bg-stone-50 overflow-auto p-4 sm:p-8 z-40">
+            <div class="max-w-6xl mx-auto">
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="shield-check" class="icon-large text-stone-800"></i>
+                        <h1 class="text-2xl font-bold text-stone-800">報名管理後台</h1>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" onclick="window.autoPairAndExport()" class="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 text-sm shadow-md transition-all">
+                            <i data-lucide="users"></i> 一鍵配對分組
+                        </button>
+                        <button type="button" onclick="window.exportCSV()" class="flex items-center gap-2 bg-stone-800 text-white px-4 py-2 rounded-lg hover:bg-stone-700 text-sm shadow-md transition-all">
+                            <i data-lucide="download"></i> 原始資料導出
+                        </button>
+                        <button type="button" onclick="window.closeAdmin()" class="flex items-center gap-2 border border-stone-300 bg-white text-stone-600 px-4 py-2 rounded-lg hover:bg-stone-100 text-sm">
+                            <i data-lucide="log-out"></i> 返回
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 數據統計區塊 -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-100">
+                        <p class="text-stone-400 text-xs mb-1">總報名人數</p>
+                        <p id="stat-total" class="text-3xl font-bold text-stone-800">0</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-100">
+                        <p class="text-stone-400 text-xs mb-1">目前最熱門時段</p>
+                        <p id="stat-hot" class="text-xl font-bold text-indigo-600 truncate">-</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-stone-100">
+                        <p class="text-stone-400 text-xs mb-1">已達成團門檻組數</p>
+                        <p id="stat-groups" class="text-3xl font-bold text-green-600">0</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-stone-100 text-stone-600 text-sm uppercase">
+                                <tr>
+                                    <th class="px-6 py-4 font-medium">報名時間</th>
+                                    <th class="px-6 py-4 font-medium">綽號</th>
+                                    <th class="px-6 py-4 font-medium">聯繫方式</th>
+                                    <th class="px-6 py-4 font-medium text-center">選擇時段</th>
+                                    <th class="px-6 py-4 font-medium text-right">管理</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-table-body" class="divide-y divide-stone-100 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 登入彈窗 -->
+        <div id="password-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div class="bg-white rounded-2xl p-6 w-full max-w-xs shadow-2xl text-center">
+                <h3 class="font-bold text-stone-800 mb-4">管理員登入</h3>
+                <input type="password" id="admin-password" placeholder="密碼" class="w-full px-4 py-3 rounded-xl border border-stone-200 focus:ring-2 focus:ring-stone-400 outline-none mb-4 text-center tracking-[1em]">
+                <button type="button" onclick="window.verifyPassword()" class="w-full bg-stone-800 text-white py-3 rounded-xl font-bold hover:bg-stone-700">確認進入</button>
+            </div>
+        </div>
+
+        <footer class="mt-12 text-center text-stone-400 text-xs">各看各書．讀書會 · 報名系統</footer>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQxW4wWSpa5AHTYP_V7j7gZpdw1qC6Lho",
+            authDomain: "book-ead1c.firebaseapp.com",
+            projectId: "book-ead1c",
+            storageBucket: "book-ead1c.firebasestorage.app",
+            messagingSenderId: "534756107481",
+            appId: "1:534756107481:web:2c8e034c6cd3c396404ac8",
+            measurementId: "G-371DVR2HLV"
+        };
+
+        const fbApp = initializeApp(firebaseConfig);
+        const auth = getAuth(fbApp);
+        const db = getFirestore(fbApp);
+        const analytics = getAnalytics(fbApp);
+
+        const TIME_SLOTS = [
+            "週一 下午 15:00", "週二 下午 15:00", "週三 下午 15:00",
+            "週三 晚上 20:00", "週四 下午 15:00", "週五 下午 15:00",
+            "週五 晚上 20:00", "週六 下午 15:00", "週日 下午 15:00"
+        ];
+        
+        let user = null;
+        let registrations = [];
+        let clickCount = 0;
+        let clickTimer = null;
+
+        const container = document.getElementById('time-slots-container');
+        TIME_SLOTS.forEach((time, index) => {
+            const div = document.createElement('div');
+            div.className = "relative";
+            div.innerHTML = `<input type="checkbox" id="t-${index}" value="${time}" class="hidden checkbox-custom time-checkbox">
+                             <label for="t-${index}" class="flex items-center justify-center px-4 py-3 border-2 border-stone-100 rounded-xl cursor-pointer hover:bg-stone-50 transition-all text-sm text-stone-600">${time}</label>`;
+            container.appendChild(div);
+        });
+
+        async function initApp() {
+            try {
+                await signInAnonymously(auth);
+                onAuthStateChanged(auth, (u) => { user = u; });
+            } catch (error) { console.error("Firebase Auth 錯誤:", error); }
+        }
+        initApp();
+        if (window.lucide) window.lucide.createIcons();
+
+        // 核心管理功能：一鍵配對分組並導出
+        window.autoPairAndExport = () => {
+            if (registrations.length === 0) return alert("目前還沒有資料可以分組喔！");
+            const groupedData = TIME_SLOTS.map(slot => {
+                const members = registrations.filter(r => r.selectedTimes.includes(slot));
+                return { slot, count: members.length, isFormed: members.length >= 6, list: members.map(m => `${m.nickname}(${m.contact})`).join(' / ') };
+            });
+            const headers = ["時段", "參加人數", "成團狀態", "名單 (綽號/聯繫方式)"];
+            const rows = groupedData.map(g => [g.slot, g.count, g.isFormed ? "已成團" : "未達標", `"${g.list}"`]);
+            const csvContent = "\uFEFF" + [headers, ...rows].map(e => e.join(",")).join("\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url; link.download = `各看各書_分組名單.csv`; link.click();
+            alert("分組表已下載！");
+        };
+
+        // --- 新增：刪除資料功能 ---
+        window.deleteRegistration = async (id, nickname) => {
+            const confirmMsg = `確定要刪除「${nickname}」的報名資料嗎？此動作無法復原。`;
+            // 使用瀏覽器內建確認框 (簡單有效)
+            if (window.confirm(confirmMsg)) {
+                try {
+                    await deleteDoc(doc(db, 'registrations', id));
+                    // 這裡不需要手動刷新表格，onSnapshot 會自動更新
+                } catch (error) {
+                    console.error("刪除失敗:", error);
+                    alert("刪除失敗，請檢查權限設定。");
+                }
+            }
+        };
+
+        function loadAdminData() {
+            if (!user) return;
+            onSnapshot(collection(db, 'registrations'), (snapshot) => {
+                registrations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                registrations.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                updateStats(); 
+                renderAdminTable();
+            });
+        }
+
+        function updateStats() {
+            document.getElementById('stat-total').innerText = registrations.length;
+            const counts = {}; let formed = 0;
+            TIME_SLOTS.forEach(slot => {
+                const num = registrations.filter(r => r.selectedTimes.includes(slot)).length;
+                counts[slot] = num; if (num >= 6) formed++;
+            });
+            const hottest = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
+            document.getElementById('stat-hot').innerText = hottest[1] > 0 ? hottest[0] : '-';
+            document.getElementById('stat-groups').innerText = formed;
+        }
+
+        function renderAdminTable() {
+            const tbody = document.getElementById('admin-table-body');
+            tbody.innerHTML = registrations.length === 0 ? '<tr><td colspan="5" class="px-6 py-10 text-center text-stone-400">目前尚無報名</td></tr>' : '';
+            registrations.forEach(reg => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-stone-50 transition-colors text-xs sm:text-sm";
+                tr.innerHTML = `
+                    <td class="px-6 py-4 text-stone-400 text-xs">${reg.createdAt?.toDate ? reg.createdAt.toDate().toLocaleString() : ''}</td>
+                    <td class="px-6 py-4 font-bold text-stone-800">${reg.nickname}</td>
+                    <td class="px-6 py-4 text-stone-600">${reg.contact}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex flex-wrap gap-1 justify-center">
+                            ${reg.selectedTimes ? reg.selectedTimes.map(t => `<span class="bg-stone-100 border border-stone-200 text-stone-600 text-[10px] px-2 py-1 rounded-md">${t}</span>`).join('') : ''}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="window.deleteRegistration('${reg.id}', '${reg.nickname}')" class="text-red-400 hover:text-red-600 transition-colors p-2 rounded-lg hover:bg-red-50">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </td>`;
+                tbody.appendChild(tr);
+            });
+            // 重新渲染新加入的圖示
+            lucide.createIcons();
+        }
+
+        window.resetForm = () => {
+            document.getElementById('registration-form').reset();
+            document.getElementById('main-card').classList.remove('hidden');
+            document.getElementById('success-msg').classList.add('hidden');
+        };
+
+        window.toggleModal = (show) => {
+            document.getElementById('password-modal').classList.toggle('hidden', !show);
+            if(show) document.getElementById('admin-password').focus();
+        };
+
+        window.verifyPassword = () => {
+            if (document.getElementById('admin-password').value === '1349') {
+                window.toggleModal(false);
+                document.getElementById('admin-view').classList.remove('hidden');
+                loadAdminData();
+            } else { alert("密碼錯誤"); }
+        };
+
+        window.closeAdmin = () => document.getElementById('admin-view').classList.add('hidden');
+
+        window.exportCSV = () => {
+            if (registrations.length === 0) return;
+            const headers = ["報名時間", "綽號", "聯繫方式", "時段"];
+            const rows = registrations.map(r => [r.createdAt?.toDate ? r.createdAt.toDate().toLocaleString().replace(/,/g, ' ') : '', r.nickname, r.contact, r.selectedTimes.join('; ')]);
+            const csvContent = "\uFEFF" + [headers, ...rows].map(e => e.join(",")).join("\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url; link.download = `報名原始資料.csv`; link.click();
+        };
+
+        document.getElementById('registration-form').onsubmit = async (e) => {
+            e.preventDefault();
+            if (!user) return alert("連線中...");
+            const selectedTimes = Array.from(document.querySelectorAll('.time-checkbox:checked')).map(cb => cb.value);
+            if (selectedTimes.length === 0) return alert("請選擇時間");
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true; btn.innerText = "傳送中...";
+            try {
+                await addDoc(collection(db, 'registrations'), {
+                    nickname: document.getElementById('nickname').value,
+                    contact: document.getElementById('contact').value,
+                    selectedTimes: selectedTimes,
+                    createdAt: serverTimestamp()
+                });
+                document.getElementById('main-card').classList.add('hidden');
+                document.getElementById('success-msg').classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (err) { alert("失敗"); }
+            finally { btn.disabled = false; btn.innerText = "提交報名"; }
+        };
+
+        document.getElementById('admin-trigger').onclick = () => {
+            clickCount++;
+            if (clickCount >= 5) { window.toggleModal(true); clickCount = 0; }
+            else { clearTimeout(clickTimer); clickTimer = setTimeout(() => { clickCount = 0; }, 2000); }
+        };
+    </script>
+</body>
+</html>
