@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>野陌 yermo | 盲盒飯局報名</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, doc, addDoc, updateDoc, onSnapshot, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // Firebase 配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQxW4wWSpa5AHTYP_V7j7gZpdw1qC6Lho",
+            authDomain: "book-ead1c.firebaseapp.com",
+            projectId: "book-ead1c",
+            storageBucket: "book-ead1c.firebasestorage.app",
+            messagingSenderId: "534756107481",
+            appId: "1:534756107481:web:2c8e034c6cd3c396404ac8",
+            measurementId: "G-371DVR2HLV"
+        };
+
+        // 初始化 Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'yermo-blind-box';
+
+        // 全域狀態
+        let submissions = [];
+        let currentUser = null;
+        let clickCount = 0;
+        let lastClickTime = 0;
+        let globalSettings = {
+            date: "4/19 (六)",
+            mealStatus: "none" // "none" (無正餐) or "available" (可加購)
+        };
+
+        // 核心初始化函數
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Authentication failed:", error);
+            }
+        };
+
+        // 監聽身分狀態與資料同步
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                // 1. 監聽報名資料
+                const registrationsRef = collection(db, 'artifacts', appId, 'public', 'data', 'registrations');
+                onSnapshot(registrationsRef, (snapshot) => {
+                    submissions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderAdminTable();
+                });
+
+                // 2. 監聽全域設定 (Rule 1: Strict Paths)
+                const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global');
+                onSnapshot(settingsRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        globalSettings = docSnap.data();
+                        updateFrontendUI();
+                        updateAdminSettingsUI();
+                    } else {
+                        // 初始化設定
+                        setDoc(settingsRef, globalSettings);
+                    }
+                });
+            }
+        });
+
+        initAuth();
+
+        // 更新前台顯示內容
+        const updateFrontendUI = () => {
+            const dateEl = document.getElementById('display-date');
+            const mealStatusEl = document.getElementById('display-meal-status');
+            
+            if (dateEl) dateEl.innerText = globalSettings.date;
+            if (mealStatusEl) {
+                if (globalSettings.mealStatus === 'available') {
+                    mealStatusEl.innerText = "當天可加購正餐";
+                    mealStatusEl.className = "font-bold text-emerald-600";
+                } else {
+                    mealStatusEl.innerText = "當天無正餐可選";
+                    mealStatusEl.className = "font-bold text-red-500";
+                }
+            }
+        };
+
+        // 更新後台設定欄位顯示
+        const updateAdminSettingsUI = () => {
+            const dateInput = document.getElementById('admin-setting-date');
+            const mealRadioNone = document.getElementById('meal-none');
+            const mealRadioAvailable = document.getElementById('meal-available');
+
+            if (dateInput) dateInput.value = globalSettings.date;
+            if (globalSettings.mealStatus === 'available') {
+                if (mealRadioAvailable) mealRadioAvailable.checked = true;
+            } else {
+                if (mealRadioNone) mealRadioNone.checked = true;
+            }
+        };
+
+        // 儲存後台設定
+        window.saveGlobalSettings = async () => {
+            if (!currentUser) return;
+            const newDate = document.getElementById('admin-setting-date').value;
+            const newMealStatus = document.querySelector('input[name="admin-meal-status"]:checked').value;
+
+            try {
+                const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global');
+                await setDoc(settingsRef, {
+                    date: newDate,
+                    mealStatus: newMealStatus
+                }, { merge: true });
+                showModal("設定已成功同步至前台！");
+            } catch (err) {
+                showModal("設定更新失敗，請檢查權限");
+            }
+        };
+
+        // 頁面切換
+        window.showView = (viewId) => {
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            document.getElementById(viewId + '-view').classList.remove('hidden');
+            window.scrollTo(0, 0);
+        };
+
+        // 表單提交
+        window.handleFormSubmit = async (e) => {
+            e.preventDefault();
+            if (!currentUser) return showModal("系統初始化中...");
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerText = "提交中...";
+
+            const formData = {
+                name: document.getElementById('form-name').value,
+                gender: document.querySelector('input[name="gender"]:checked').value,
+                contact: document.getElementById('form-contact').value,
+                time: document.getElementById('form-time').value,
+                option: document.getElementById('form-option').value,
+                preference: document.querySelector('input[name="preference"]:checked').value,
+                personality: document.querySelector('input[name="personality"]:checked').value,
+                note: document.getElementById('form-note').value,
+                isHidden: false,
+                table: null,
+                createdAt: serverTimestamp()
+            };
+
+            try {
+                const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'registrations');
+                await addDoc(colRef, formData);
+                showView('success');
+            } catch (err) {
+                showModal("提交失敗");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "送出盲盒報名";
+            }
+        };
+
+        // 後台入口點擊
+        window.handleAddressClick = () => {
+            const now = Date.now();
+            if (now - lastClickTime < 500) {
+                clickCount++;
+                if (clickCount >= 5) {
+                    document.getElementById('password-modal').classList.remove('hidden');
+                    clickCount = 0;
+                }
+            } else {
+                clickCount = 1;
+            }
+            lastClickTime = now;
+        };
+
+        window.checkAdminPassword = () => {
+            const pw = document.getElementById('admin-password-input').value;
+            if (pw === '1349') {
+                document.getElementById('password-modal').classList.add('hidden');
+                document.getElementById('admin-password-input').value = '';
+                showView('admin');
+            } else {
+                showModal("密碼錯誤");
+            }
+        };
+
+        window.hideSubmission = async (id) => {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'registrations', id);
+            await updateDoc(docRef, { isHidden: true });
+        };
+
+        window.downloadCSV = () => {
+            const headers = ["稱呼", "性別", "聯繫方式", "時段", "餐點", "偏好", "性格", "備註", "桌號"];
+            const rows = submissions.map(s => [s.name, s.gender, s.contact, s.time, s.option, s.preference, s.personality, s.note, s.table || "未分配"]);
+            let csvContent = "\ufeff" + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `野陌報名名單.csv`;
+            link.click();
+        };
+
+        window.autoMatch = async () => {
+            const visible = submissions.filter(s => !s.isHidden && !s.table);
+            if (visible.length < 2) return showModal("人數不足，無法配對");
+            
+            let tableNum = submissions.filter(s => s.table).length + 1;
+            try {
+                for (let i = 0; i < visible.length; i += 6) {
+                    const batch = visible.slice(i, i + 6);
+                    if (batch.length >= 2) {
+                        const label = `桌-${tableNum++}`;
+                        for (const p of batch) {
+                            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'registrations', p.id), { table: label });
+                        }
+                    }
+                }
+                showModal("配對完成");
+            } catch(e) { showModal("更新失敗"); }
+        };
+
+        const renderAdminTable = () => {
+            const tbody = document.getElementById('admin-table-body');
+            if (!tbody) return;
+            const filtered = submissions.filter(s => !s.isHidden);
+            tbody.innerHTML = filtered.map(s => `
+                <tr class="border-b hover:bg-stone-50 transition-colors">
+                    <td class="p-4 font-bold text-stone-700">${s.name}</td>
+                    <td class="p-4">${s.gender}/${s.personality}</td>
+                    <td class="p-4 text-xs">${s.contact}</td>
+                    <td class="p-4 text-xs">${s.time}</td>
+                    <td class="p-4 text-center">
+                        <span class="px-2 py-0.5 rounded text-[10px] ${s.preference === '全女局' ? 'bg-pink-100 text-pink-600' : 'bg-blue-100 text-blue-600'}">${s.preference}</span>
+                    </td>
+                    <td class="p-4 text-center">
+                        ${s.table ? `<span class="bg-emerald-800 text-white px-2 py-1 rounded text-[10px] font-bold">${s.table}</span>` : `<span class="text-stone-300 italic text-xs">未安排</span>`}
+                    </td>
+                    <td class="p-4 text-right">
+                        <button onclick="hideSubmission('${s.id}')" class="text-stone-300 hover:text-red-500"><i data-lucide="eye-off" class="w-4 h-4"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        };
+
+        window.showModal = (msg) => {
+            const m = document.getElementById('msg-modal');
+            document.getElementById('msg-content').innerText = msg;
+            m.classList.remove('hidden');
+        };
+        window.closeModal = () => document.getElementById('msg-modal').classList.add('hidden');
+
+        lucide.createIcons();
+    </script>
+
+    <style>
+        .view { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        input[type="radio"]:checked + label { background-color: #064e3b; color: white; border-color: #064e3b; }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800 min-h-screen">
+
+    <nav class="bg-white border-b border-stone-200 p-4 sticky top-0 z-40 shadow-sm">
+        <div class="max-w-2xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold tracking-[0.2em] text-emerald-900">野陌 yermo</h1>
+            <button onclick="showView('form')" class="text-stone-400 hover:text-emerald-800 transition-colors">
+                <i data-lucide="home" class="w-6 h-6"></i>
+            </button>
+        </div>
+    </nav>
+
+    <main class="max-w-3xl mx-auto p-4 pt-8 pb-32">
+
+        <!-- 1. 報名頁面 -->
+         <div id="form-view" class="view">
+            <header class="text-center mb-10">
+                <div class="inline-block bg-emerald-100 text-emerald-800 text-[10px] font-bold px-3 py-1 rounded-full mb-4 tracking-widest uppercase">Blind Box Dinner</div>
+                <h2 class="text-3xl font-bold mb-6 text-stone-800">什麼是「盲盒飯局」？</h2>
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-stone-100 text-left leading-relaxed text-stone-600 space-y-4">
+                    <p>就像打開盲盒一樣，你不知道今天會抽到什麼驚喜。</p>
+                    <p>在野陌，我們打破社交隔閡。參與飯局的人彼此陌生，在報名前你不會知道同桌的夥伴是誰，唯一的共通點是：你們都願意分享一個下午的時光。</p>
+                    <p class="font-bold text-emerald-800 italic">放下手機，與新朋友交換故事，讓陌生的靈魂在野陌相遇。</p>
+                </div>
+            </header>
+
+            <section class="grid grid-cols-2 gap-3 mb-10 text-sm max-w-2xl mx-auto">
+                <a href="https://maps.app.goo.gl/RDz54tgNtpNYZiwb6?g_st=ic" target="_blank" class="bg-white p-4 rounded-2xl border border-stone-100 flex flex-col items-center text-center">
+                    <i data-lucide="map-pin" class="text-emerald-600 mb-2"></i>
+                    <span class="text-stone-400 text-[10px] font-bold uppercase">地點</span>
+                    <span class="font-bold underline">野陌 yermo</span>
+                </a>
+                <div class="bg-white p-4 rounded-2xl border border-stone-100 flex flex-col items-center text-center">
+                    <i data-lucide="calendar" class="text-emerald-600 mb-2"></i>
+                    <span class="text-stone-400 text-[10px] font-bold uppercase">日期</span>
+                    <span id="display-date" class="font-bold">載入中...</span>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-stone-100 flex flex-col items-center text-center">
+                    <i data-lucide="dollar-sign" class="text-emerald-600 mb-2"></i>
+                    <span class="text-stone-400 text-[10px] font-bold uppercase">費用</span>
+                    <span class="font-bold">$380 / 人</span>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-stone-100 flex flex-col items-center text-center">
+                    <i data-lucide="alert-circle" class="text-emerald-600 mb-2"></i>
+                    <span class="text-stone-400 text-[10px] font-bold uppercase">用餐提醒</span>
+                    <span id="display-meal-status" class="font-bold">載入中...</span>
+                </div>
+            </section>
+
+            <form id="registration-form" onsubmit="handleFormSubmit(event)" class="max-w-2xl mx-auto bg-white rounded-[2rem] p-8 shadow-xl border border-stone-100 space-y-8">
+                <h3 class="text-xl font-bold flex items-center gap-2 border-b border-stone-100 pb-4 text-stone-700">
+                    <i data-lucide="pen-tool" class="text-emerald-700"></i> 盲盒願望卡
+                </h3>
+
+                <div class="space-y-3">
+                    <label class="block text-sm font-bold text-stone-600">在LINE社群 i人夜店 中的名稱</label>
+                    <input id="form-name" required type="text" class="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" placeholder="你的暱稱">
+                </div>
+
+                <div class="space-y-3">
+                    <label class="block text-sm font-bold text-stone-600">② 你的生理性別</label>
+                    <div class="flex gap-3">
+                        <input type="radio" name="gender" value="男" id="g-m" class="hidden" required>
+                        <label for="g-m" class="flex-1 text-center p-3 border border-stone-200 rounded-xl cursor-pointer hover:bg-stone-50 transition-all">男</label>
+                        <input type="radio" name="gender" value="女" id="g-f" class="hidden">
+                        <label for="g-f" class="flex-1 text-center p-3 border border-stone-200 rounded-xl cursor-pointer hover:bg-stone-50 transition-all">女</label>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <label class="block text-sm font-bold text-stone-600">③ 可以聯絡到你的方式</label>
+                    <input id="form-contact" required type="text" class="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl outline-none" placeholder="Line / 電話 / IG">
+                </div>
+
+                <div class="space-y-3">
+                    <label class="block text-sm font-bold text-stone-600">預約時間</label>
+                    <select id="form-time" class="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl outline-none appearance-none">
+                        <option>上半天（10:00-13:00）</option>
+                        <option>下半天（14:00-17:00）</option>
+                    </select>
+                </div>
+
+                <div class="space-y-3">
+                    <label class="block text-sm font-bold text-stone-600">餐點選擇</label>
+                    <select id="form-option" class="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl outline-none appearance-none">
+                        <option>① 2杯飲品</option>
+                        <option>② 一份炸物 + 一杯飲品</option>
+                        <option>③ 一份甜點 + 一杯飲品</option>
+                        <option>④ 限定早午餐拼盤</option>
+                    </select>
+                </div>
+
+                <div class="space-y-3">
+                    <label class="block text-sm font-bold text-stone-600">④ 飯局偏好</label>
+                    <div class="flex gap-3">
+                        <input type="radio" name="preference" value="男女混合局" id="p-mix" class="hidden" checked>
+                        <label for="p-mix" class="flex-1 text-center p-3 border border-stone-200 rounded-xl text-sm cursor-pointer">男女混合局</label>
+                        <input type="radio" name="preference" value="全女局" id="p-girls" class="hidden">
+                        <label for="p-girls" class="flex-1 text-center p-3 border border-stone-200 rounded-xl text-sm cursor-pointer">全女局</label>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <label class="block text-sm font-bold text-stone-600">⑤ 你是 I人 還是 E人？</label>
+                    <div class="flex gap-3">
+                        <input type="radio" name="personality" value="I人" id="m-i" class="hidden" checked>
+                        <label for="m-i" class="flex-1 text-center p-3 border border-stone-200 rounded-xl cursor-pointer">I人</label>
+                        <input type="radio" name="personality" value="E人" id="m-e" class="hidden">
+                        <label for="m-e" class="flex-1 text-center p-3 border border-stone-200 rounded-xl cursor-pointer">E人</label>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <label class="block text-sm font-bold text-stone-600">⑥ 備註</label>
+                    <textarea id="form-note" class="w-full p-4 bg-stone-50 border border-stone-200 rounded-2xl outline-none h-24" placeholder="對這場聚會有什麼期待嗎？"></textarea>
+                </div>
+
+                <button type="submit" class="w-full bg-emerald-900 text-white font-bold py-5 rounded-[1.5rem] shadow-lg shadow-emerald-200 active:scale-95 transition-all">
+                    送出盲盒報名
+                </button>
+            </form>
+        </div>
+
+        <!-- 2. 成功頁面 -->
+        <div id="success-view" class="view hidden py-20 text-center">
+            <div class="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-8 text-emerald-800 animate-bounce">
+                <i data-lucide="check" class="w-12 h-12"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-stone-800 mb-4">報名成功！</h2>
+            <p class="text-stone-500 mb-10 leading-relaxed text-lg">收到你的盲盒願望卡了✨<br/>我們會盡快通知成局的時間唷！</p>
+            <button onclick="showView('form')" class="bg-stone-800 text-white px-10 py-3 rounded-full">返回</button>
+        </div>
+
+        <!-- 3. 後台管理 -->
+        <div id="admin-view" class="view hidden space-y-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <h2 class="text-2xl font-bold flex items-center gap-2"><i data-lucide="settings" class="text-emerald-700"></i> 管理中心</h2>
+                <div class="flex gap-2">
+                    <button onclick="autoMatch()" class="bg-emerald-700 text-white p-2 rounded-lg" title="一鍵配對"><i data-lucide="users"></i></button>
+                    <button onclick="downloadCSV()" class="bg-stone-800 text-white p-2 rounded-lg" title="導出CSV"><i data-lucide="download"></i></button>
+                </div>
+            </div>
+
+            <!-- 全域設定面板 -->
+            <section class="bg-white p-6 rounded-3xl border border-stone-100 shadow-sm space-y-6">
+                <h3 class="font-bold text-stone-800 flex items-center gap-2"><i data-lucide="layout" class="w-5 h-5"></i> 前台活動設定</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider">前台顯示日期</label>
+                        <input id="admin-setting-date" type="text" class="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl outline-none" placeholder="例如：4/19 (六)">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider">前台正餐供應狀態</label>
+                        <div class="flex gap-2">
+                            <input type="radio" name="admin-meal-status" value="none" id="meal-none" class="hidden">
+                            <label for="meal-none" class="flex-1 text-center p-3 border border-stone-200 rounded-xl text-xs cursor-pointer hover:bg-stone-50 transition-all">當天無正餐可選</label>
+                            
+                            <input type="radio" name="admin-meal-status" value="available" id="meal-available" class="hidden">
+                            <label for="meal-available" class="flex-1 text-center p-3 border border-stone-200 rounded-xl text-xs cursor-pointer hover:bg-stone-50 transition-all">當天可加購正餐</label>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="saveGlobalSettings()" class="w-full bg-stone-800 text-white py-3 rounded-2xl font-bold text-sm hover:bg-black transition-colors">儲存設定並更新前台</button>
+            </section>
+
+            <!-- 報名名單 -->
+            <div class="bg-white rounded-3xl shadow-sm border border-stone-100 overflow-hidden overflow-x-auto">
+                <table class="w-full text-left text-sm min-w-[700px]">
+                    <thead class="bg-stone-50 border-b">
+                        <tr>
+                            <th class="p-4 font-bold">報名者</th>
+                            <th class="p-4 font-bold">屬性</th>
+                            <th class="p-4 font-bold">聯繫方式</th>
+                            <th class="p-4 font-bold">預約時段</th>
+                            <th class="p-4 font-bold text-center">偏好</th>
+                            <th class="p-4 font-bold text-center">桌號</th>
+                            <th class="p-4 font-bold text-right">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-center py-10 px-4 border-t border-stone-100 bg-white mt-10">
+        <p class="text-[10px] text-stone-300 tracking-[0.3em] mb-4 uppercase">yermo yermo yermo</p>
+        <button onclick="handleAddressClick()" class="text-stone-400 text-sm select-none cursor-default active:scale-95">
+            地址：桃園市桃園區新埔三街46號
+        </button>
+    </footer>
+
+    <!-- 密碼 Modal -->
+    <div id="password-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 hidden">
+        <div class="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl">
+            <h3 class="text-xl font-bold mb-6 text-center">管理者身分驗證</h3>
+            <input id="admin-password-input" type="password" placeholder="密碼" class="w-full p-4 bg-stone-100 rounded-2xl mb-6 text-center text-3xl tracking-widest outline-none border-2 border-transparent focus:border-emerald-600">
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('password-modal').classList.add('hidden')" class="flex-1 bg-stone-100 py-4 rounded-2xl font-bold">取消</button>
+                <button onclick="checkAdminPassword()" class="flex-1 bg-emerald-800 text-white py-4 rounded-2xl font-bold">登入</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通用提示 Modal -->
+    <div id="msg-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-center justify-center p-6 hidden">
+        <div class="bg-white rounded-3xl p-6 max-w-xs w-full shadow-xl text-center">
+            <p id="msg-content" class="mb-6 font-medium text-stone-700"></p>
+            <button onclick="closeModal()" class="w-full bg-stone-800 text-white py-3 rounded-2xl">確定</button>
+        </div>
+    </div>
+
+</body>
+</html>
