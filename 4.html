@@ -44,6 +44,15 @@ nav.scrolled .nav-toggle span{background:var(--ink)}
 .hero-tagline{position:relative;z-index:2;margin-top:1.4rem;font-size:.88rem;line-height:2;color:rgba(245,238,220,.7);font-weight:300;max-width:380px;animation:fadeUp .8s .6s both}
 .hero-cta{position:relative;z-index:2;margin-top:2rem;display:inline-flex;align-items:center;gap:.7rem;background:var(--rust);color:var(--cream);font-size:.78rem;letter-spacing:.15em;padding:.9rem 1.8rem;text-decoration:none;transition:background .3s,transform .3s;animation:fadeUp .8s .8s both}
 .hero-cta:hover{background:var(--rust-dark);transform:translateY(-2px)}
+.hero-cta-book{position:relative;z-index:2;margin-top:1rem;display:inline-flex;align-items:center;gap:.7rem;background:transparent;color:var(--cream);font-size:.78rem;letter-spacing:.15em;padding:.85rem 1.8rem;text-decoration:none;border:1px solid rgba(245,238,220,.45);transition:background .3s,border-color .3s,transform .3s;animation:fadeUp .8s .95s both}
+.hero-cta-book:hover{background:rgba(245,238,220,.1);border-color:var(--cream);transform:translateY(-2px)}
+.nav-book{background:var(--rust);color:var(--cream)!important;padding:.4rem 1rem;font-size:.72rem!important;letter-spacing:.15em;transition:background .3s!important}
+.nav-book:hover{background:var(--rust-dark)!important;color:var(--cream)!important}
+nav.scrolled .nav-book{color:var(--cream)!important}
+.booking-banner{background:var(--rust);color:var(--cream);text-align:center;padding:1.1rem 2rem;display:flex;align-items:center;justify-content:center;gap:1.5rem;flex-wrap:wrap}
+.booking-banner p{font-size:.82rem;letter-spacing:.08em}
+.booking-banner a{display:inline-flex;align-items:center;gap:.5rem;background:var(--cream);color:var(--rust);font-size:.78rem;font-weight:600;letter-spacing:.15em;padding:.6rem 1.4rem;text-decoration:none;transition:opacity .3s;white-space:nowrap}
+.booking-banner a:hover{opacity:.85}
 .hero-scroll{position:absolute;bottom:4rem;right:2.5rem;z-index:2;display:flex;flex-direction:column;align-items:center;gap:.5rem;font-size:.6rem;letter-spacing:.25em;color:rgba(245,238,220,.45);writing-mode:vertical-rl;animation:fadeUp 1s 1s both}
 .hero-scroll::after{content:'';display:block;width:1px;height:40px;background:rgba(245,238,220,.3);animation:pulse 2s ease-in-out infinite}
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
@@ -183,6 +192,7 @@ footer{background:var(--ink);color:rgba(245,238,220,.45);padding:3rem 2rem 2rem}
     <li><a href="#menu">菜單</a></li>
     <li><a href="#hours">資訊</a></li>
     <li><a href="#location">位置</a></li>
+    <li><a href="https://inline.app/booking/-O_Abi6nq2xs5h3sl4MX:inline-live-3/-O_AbiEoIzvtsuNlAloO?utm_id=97760_v0_s00_e0_tv3_a1dennglw3s10k" target="_blank" rel="noopener" class="nav-book">立即訂位</a></li>
   </ul>
   <button class="nav-toggle" id="tog" aria-label="選單">
     <span></span><span></span><span></span>
@@ -193,15 +203,22 @@ footer{background:var(--ink);color:rgba(245,238,220,.45);padding:3rem 2rem 2rem}
 <section id="hero">
   <div class="hero-bg"></div>
   <div class="hero-overlay"></div>
-  <span class="hero-badge">TAOYUAN · 桃園區 · OPEN DAILY 10:00–18:00</span>
+  <span class="hero-badge">TAOYUAN · 藝文特區 · OPEN DAILY 10:00–18:00</span>
   <h1 class="hero-title">
     野陌小餐館
     <span>YERMO EATERY</span>
   </h1>
   <p class="hero-tagline">「讓早晨，停留更久一點」<br>Let the morning linger a little longer.</p>
   <a href="#menu" class="hero-cta">瀏覽菜單 →</a>
+  <a href="https://inline.app/booking/-O_Abi6nq2xs5h3sl4MX:inline-live-3/-O_AbiEoIzvtsuNlAloO?utm_id=97760_v0_s00_e0_tv3_a1dennglw3s10k" target="_blank" rel="noopener" class="hero-cta-book">📅 線上訂位</a>
   <div class="hero-scroll">SCROLL</div>
 </section>
+
+<!-- BOOKING BANNER -->
+<div class="booking-banner">
+  <p>✦ 提供線上訂位，免等候更安心</p>
+  <a href="https://inline.app/booking/-O_Abi6nq2xs5h3sl4MX:inline-live-3/-O_AbiEoIzvtsuNlAloO?utm_id=97760_v0_s00_e0_tv3_a1dennglw3s10k" target="_blank" rel="noopener">📅 立即線上訂位 →</a>
+</div>
 
 <!-- ABOUT -->
 <section id="about">
@@ -217,7 +234,7 @@ footer{background:var(--ink);color:rgba(245,238,220,.45);padding:3rem 2rem 2rem}
         <h2 class="title reveal">讓每一頓早午餐<br>都值得等待</h2>
         <div class="rule reveal"></div>
         <p class="reveal">野陌，是城市裡一條安靜的岔路。裸磚牆、老舊灰泥、懸掛的蔓綠絨——我們用空間說一種慢下來的語言。</p>
-        <p class="reveal d1">從烤得酥脆的酸種麵包到用心熬煮的義大利麵，每一道料理都藏著我們對食材的誠意。桌上的綠意是真實的，陽光也是。</p>
+        <p class="reveal d1">從豐富美味的早午餐到用心熬煮的義大利麵，每一道料理都藏著我們對食材的誠意。桌上的綠意是真實的，陽光也是。</p>
         <div class="notice-box reveal d2">
           <strong>用餐須知 HOUSE RULES</strong>
           ✦ 低消為每人一份餐點或飲品，加收 10% 服務費<br>
@@ -271,8 +288,7 @@ footer{background:var(--ink);color:rgba(245,238,220,.45);padding:3rem 2rem 2rem}
           <div class="menu-item"><div class="menu-item-left"><div class="menu-item-name">早餐雙腸 &amp; 野菇炒蛋</div><div class="menu-item-en">Breakfast Sausages &amp; Mushrooms Scramble</div><div class="menu-item-desc">煎培根・早餐腸 &amp; 德腸・野菇炒蛋・奶油生吐司・綜合生菜</div></div><div class="menu-item-price">$350</div></div>
           <div class="menu-item"><div class="menu-item-left"><div class="menu-item-name">奶油鮮蝦 &amp; 炒時蔬</div><div class="menu-item-en">Creamy Shrimp &amp; Sautéed Veggies</div><div class="menu-item-desc">奶油蝦・炒時蔬・炒蛋・香蒜法棍・綜合生菜</div></div><div class="menu-item-price">$360</div></div>
           <div class="menu-item"><div class="menu-item-left"><div class="menu-item-name">燻鮭酪梨 &amp; 酸種麵包</div><div class="menu-item-en">Smoked Salmon &amp; Avocado on Sourdough</div><div class="menu-item-desc">煙燻鮭魚・酪梨醬・水波蛋・酸種麵包・綜合生菜</div></div><div class="menu-item-price">$360</div></div>
-          <div class="menu-item"><div class="menu-item-left"><div class="menu-item-name">香料雞腿排 &amp; 太陽蛋</div><div class="menu-item-en">Spiced Chicken Steak &amp; Sunny Egg</div><div class="menu-item-desc">香料雞腿排・炒時蔬・太陽蛋・細薯條・綜合生菜</div></div><div class="menu-item-price">$350</div></div>
-          <div class="menu-item"><div class="menu-item-left"><div class="menu-item-name">夏卡蘇卡 &amp; 香蒜法棍 <span class="veg">素</span></div><div class="menu-item-en">Shakshuka &amp; Garlic Baguette</div><div class="menu-item-desc">北非蛋・香蒜法棍・水波蛋・堅果洋菇・綜合生菜</div></div><div class="menu-item-price">$350</div></div>
+          <div class="menu-item"><div class="menu-item-left"><div class="menu-item-name">香料雞腿排 &amp; 太陽蛋</div><div class="menu-item-en">Spiced Chicken Steak &amp; Sunny Egg</div><div class="menu-item-desc">香料雞腿排・炒時蔬・太陽蛋・細薯條・綜合生菜</div></div><div class="menu-item-price">$350</div></div>          
           <div class="menu-item"><div class="menu-item-left"><div class="menu-item-name">布拉塔起司 &amp; 辣椒酸種 <span class="veg">素</span></div><div class="menu-item-en">Burrata Nut &amp; Chili Cheese Sourdough</div><div class="menu-item-desc">布拉塔起司・無花果醬・辣椒起司酸種・綜合生菜</div></div><div class="menu-item-price">$340</div></div>
         </div>
         <div class="menu-note">※ 無肉早餐，方便素可食 · Vegetarian-friendly (No meat).</div>
@@ -467,6 +483,10 @@ footer{background:var(--ink);color:rgba(245,238,220,.45);padding:3rem 2rem 2rem}
     <div class="footer-col">
       <h4>FOLLOW</h4>
       <a href="https://www.instagram.com/yer.mo_/" target="_blank" rel="noopener">Instagram @YER.MO_</a>
+    </div>
+    <div class="footer-col">
+      <h4>RESERVATION</h4>
+      <a href="https://inline.app/booking/-O_Abi6nq2xs5h3sl4MX:inline-live-3/-O_AbiEoIzvtsuNlAloO?utm_id=97760_v0_s00_e0_tv3_a1dennglw3s10k" target="_blank" rel="noopener" style="color:var(--rust)">📅 線上訂位</a>
     </div>
   </div>
   <div class="footer-copy">「讓早晨，停留更久一點」 · © 2025 野陌小餐館 YERMO. All rights reserved.</div>
